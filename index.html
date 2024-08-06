@@ -393,7 +393,7 @@
                             <div class="row attendee-counter col-md-12 text-center">
                                 <div class="col-sm-4">
                                     <div class="counter-item" data-toggle="modal" data-target="#listAttendeeModal" data-value="yes_ui" data-title="Going List">
-                                        <p class="counter counter-yes">0</p>
+                                       <p><span id="total-going">0</span></p>
                                         <div>
                                             <p>Going</p>
                                         </div>
@@ -401,32 +401,21 @@
                                 </div>
                                 <div class="col-sm-4">
                                     <div class="counter-item" data-toggle="modal" data-target="#listAttendeeModal" data-value="maybe_ui" data-title="Maybe List">
-                                        <p class="counter counter-maybe">0</p>
-                                        <div>
-                                            <p>Maybe</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-sm-4">
-                                    <div class="counter-item" data-toggle="modal" data-target="#listAttendeeModal" data-value="not_ui" data-title="Not Going List">
-                                        <p class="counter counter-not">0</p>
+                                         <p><span id="total-not-going">0</span></p>
                                         <div>
                                             <p>Not Going</p>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="section-attendee" data-rsvp="https://undangan.my/undangamyweds/attendees" data-list="https://undangan.my/KP/attendee/comments?secret_key=undangamyweds"></div>
-                            <div class="wish-section mt-5 mb-5">
-                                <label class="title-font text-center font-medium" style="width: 100%;">WISH TIMELINE</label>
-                                <div class="timeline-list mt-4">
-                                    <div class="owl-carousel owl-theme order-carousel"></div>
-                                    <div class="text-center">
-                                        <span class="fa fa-spin fa-spinner" style="font-size: 3em; color: #e54595;"/>
+                                <div class="col-sm-4">
+                                    <div class="counter-item" data-toggle="modal" data-target="#listAttendeeModal" data-value="not_ui" data-title="Not Going List">
+                                        <p><span id="total-pax">0</span></p>
+                                        <div>
+                                            <p>Total Pax</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
                         <div class="section last-section" style="padding-bottom: 170px; text-align: center">
                             <a target="_blank" href="https://undangan.my">
                                 <img src="https://undangan.my/img/undangan/undangan-img-1.png" class="img-fluid img-logo-word-big" alt="logo">
@@ -719,6 +708,99 @@
                 </div>
             </div>
         </div>
+        <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+  apiKey: "AIzaSyAUcAdcSR2jIiDWI3J_Wa78Xiy-saqMU78",
+  authDomain: "rsvp-daacd.firebaseapp.com",
+  projectId: "rsvp-daacd",
+  storageBucket: "rsvp-daacd.appspot.com",
+  messagingSenderId: "257111835647",
+  appId: "1:257111835647:web:51b0d155e48363713eddca",
+  measurementId: "G-5ZWXHTGDPG"
+};
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Handle form submission
+        document.getElementById('attendee-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const pax = document.getElementById('pax').value;
+            const status = document.getElementById('status').value;
+            const comment = document.getElementById('comment').value;
+
+            try {
+                await addDoc(collection(db, 'attendees'), {
+                    name,
+                    pax: parseInt(pax, 10),
+                    status,
+                    comment
+                });
+                alert('Attendee details submitted successfully!');
+                event.target.reset();
+                loadAttendees();
+            } catch (error) {
+                console.error('Error adding document: ', error);
+            }
+        });
+
+        // Load attendees from Firestore
+        async function loadAttendees() {
+            const goingContainer = document.getElementById('going-attendees');
+            const notGoingContainer = document.getElementById('not-going-attendees');
+            const totalGoingElem = document.getElementById('total-going');
+            const totalNotGoingElem = document.getElementById('total-not-going');
+            const totalPaxElem = document.getElementById('total-pax');
+
+            goingContainer.innerHTML = '';
+            notGoingContainer.innerHTML = '';
+
+            let totalGoing = 0;
+            let totalNotGoing = 0;
+            let totalPax = 0;
+
+            try {
+                const querySnapshot = await getDocs(collection(db, 'attendees'));
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const attendeeHTML = `
+                        <div>
+                            <h3>${data.name}</h3>
+                            <p><strong>Pax:</strong> ${data.pax || 'N/A'}</p>
+                            <p><strong>Comment:</strong> ${data.comment || 'N/A'}</p>
+                        </div>
+                    `;
+
+                    if (data.status === 'Going') {
+                        goingContainer.innerHTML += attendeeHTML;
+                        totalGoing++;
+                    } else if (data.status === 'Not Going') {
+                        notGoingContainer.innerHTML += attendeeHTML;
+                        totalNotGoing++;
+                    }
+
+                    totalPax += data.pax || 0;
+                });
+
+                totalGoingElem.textContent = totalGoing;
+                totalNotGoingElem.textContent = totalNotGoing;
+                totalPaxElem.textContent = totalPax;
+            } catch (error) {
+                console.error('Error fetching documents: ', error);
+            }
+        }
+
+        // Initial load
+        loadAttendees();
+    </script>
         <script src="https://undangan.my/pack/card/pack.min.js?id=e013fea9936dac55bff8"></script>
         <script src="https://js.api.here.com/v3/3.0/mapsjs-core.js"></script>
         <script src="https://js.api.here.com/v3/3.0/mapsjs-service.js"></script>
